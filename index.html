@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Painel de Notas Fiscais</title>
+<style>
+/* ===== Estilos: azul e branco, mobile first ===== */
+:root{
+  --azul-900:#0b2a5b; --azul-700:#1a4fa3; --azul-600:#1f63c8; --azul-100:#e6efff; --azul-50:#f3f7ff;
+  --texto:#13233f; --suave:#5b6b85; --borda:#d5e0f2; --branco:#fff;
+  --verde:#0f7a4a; --vermelho:#b3261e;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--azul-50);color:var(--texto);line-height:1.45}
+[hidden]{display:none!important}
+button,input,select{font:inherit}
+
+/* ---- Login ---- */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;background:linear-gradient(160deg,var(--azul-900),var(--azul-600))}
+.login-box{background:var(--branco);width:100%;max-width:380px;border-radius:16px;padding:28px 22px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.login-box h1{margin:0 0 4px;font-size:1.35rem;color:var(--azul-900)}
+.login-box p{margin:0 0 18px;color:var(--suave);font-size:.95rem}
+.campo{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.campo label{font-size:.82rem;font-weight:600;color:var(--azul-900)}
+.campo input,.campo select{height:46px;padding:0 12px;border:1px solid var(--borda);border-radius:10px;background:#fff;color:var(--texto);width:100%}
+.campo input:focus,.campo select:focus{outline:3px solid #9cc0ff;border-color:var(--azul-600)}
+.erro{color:var(--vermelho);font-size:.9rem;min-height:1.3em;margin:0 0 8px}
+.btn{height:46px;padding:0 16px;border:0;border-radius:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn-primario{background:var(--azul-600);color:#fff;width:100%}
+.btn-primario:hover{background:var(--azul-700)}
+.btn-sec{background:#fff;color:var(--azul-700);border:1.5px solid var(--azul-600)}
+.btn-sec:hover{background:var(--azul-100)}
+
+/* ---- Cabeçalho ---- */
+.topo{background:var(--azul-900);color:#fff;padding:14px 16px}
+.topo-in{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.topo h1{margin:0;font-size:1.1rem}
+.topo small{opacity:.8;display:block;font-weight:400}
+.btn-sair{height:38px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.6)}
+main{max-width:1100px;margin:0 auto;padding:16px}
+
+/* ---- Resumo ---- */
+.resumo{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:16px}
+.card{background:#fff;border:1px solid var(--borda);border-radius:14px;padding:14px 16px;border-left:5px solid var(--azul-600)}
+.card span{display:block;font-size:.82rem;color:var(--suave);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.card strong{display:block;font-size:1.5rem;color:var(--azul-900);margin-top:2px}
+.card.dev{border-left-color:var(--vermelho)} .card.dev strong{color:var(--vermelho)}
+.card.rec{border-left-color:var(--verde)} .card.rec strong{color:var(--verde)}
+.card em{font-style:normal;font-size:.8rem;color:var(--suave)}
+
+
+/* ---- Gráfico por vencimento (barras horizontais, sem rolagem lateral) ---- */
+.grafico h2{margin:0 0 2px;font-size:1.05rem;color:var(--azul-900)}
+.grafico .sub{margin:0 0 12px;color:var(--suave);font-size:.85rem}
+.gl{display:grid;grid-template-columns:78px 1fr auto;align-items:center;gap:8px;padding:4px 0;font-size:.88rem}
+.gl .d{font-weight:600;color:var(--azul-900);font-variant-numeric:tabular-nums}
+.gl .trilho{background:var(--azul-100);border-radius:6px;height:20px;overflow:hidden}
+.gl .barra{height:100%;background:var(--azul-600);border-radius:6px;min-width:3px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.gl .v{font-variant-numeric:tabular-nums;font-weight:700;text-align:right;min-width:92px}
+@media (max-width:420px){.gl{grid-template-columns:66px 1fr;row-gap:0}.gl .v{grid-column:1/-1;text-align:left;padding-left:74px;margin-top:2px;margin-bottom:6px;font-size:.82rem}}
+
+/* ---- Abas ---- */
+.tabs{display:flex;gap:6px;margin-bottom:16px;background:#fff;border:1px solid var(--borda);border-radius:14px;padding:5px}
+.tab{flex:1;height:44px;border:0;border-radius:10px;background:transparent;color:var(--azul-700);font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.tab[aria-selected="true"]{background:var(--azul-600);color:#fff}
+.tab .badge{background:var(--vermelho);color:#fff;border-radius:999px;font-size:.75rem;min-width:22px;padding:1px 7px}
+.tab .badge.ok{background:var(--verde)}
+
+/* ---- Status ---- */
+.st{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.78rem;font-weight:700;white-space:nowrap}
+.st-QUITADO{background:#dff5e8;color:var(--verde)}
+.st-EM_ABERTO{background:var(--azul-100);color:var(--azul-700)}
+.st-AGENDADO{background:#fff1d6;color:#8a5a00}
+.st-OUTRO{background:#eceff4;color:#44526b}
+
+/* ---- Conformidade ---- */
+.resumo4{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.resumo4 .card strong{font-size:1.35rem}
+.card.amar{border-left-color:#d99000}.card.amar strong{color:#8a5a00}
+.intro{margin:0 0 12px;color:var(--suave);font-size:.9rem}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.seg button{height:38px;padding:0 14px;border:1.5px solid var(--azul-600);background:#fff;color:var(--azul-700);border-radius:999px;font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--azul-600);color:#fff}
+.regra{background:#fff;border:1px solid var(--borda);border-radius:14px;margin-bottom:10px;border-left:5px solid var(--verde)}
+.regra.erro{border-left-color:var(--vermelho)}.regra.atencao{border-left-color:#d99000}
+.regra summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:flex-start}
+.regra summary::-webkit-details-marker{display:none}
+.regra .ic{flex:0 0 26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;background:var(--verde)}
+.regra.erro .ic{background:var(--vermelho)}.regra.atencao .ic{background:#d99000}
+.regra .tt{flex:1}.regra .tt b{display:block;color:var(--azul-900)}
+.regra .tt small{color:var(--suave)}
+.regra .res{font-size:.82rem;font-weight:700;white-space:nowrap;color:var(--verde)}
+.regra.erro .res{color:var(--vermelho)}.regra.atencao .res{color:#8a5a00}
+.regra .corpo{padding:0 14px 12px}
+.regra .ok-msg{color:var(--suave);font-size:.9rem;margin:0}
+.ocor{list-style:none;border-top:1px solid var(--borda);padding:9px 0}
+.ocor .oc-t{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:.9rem}
+.ocor .oc-t b{color:var(--azul-900)}.ocor .oc-t span{color:var(--suave)}
+.ocor .oc-m{font-size:.9rem;margin-top:2px}
+.ocor .oc-d{font-size:.8rem;color:var(--suave);margin-top:2px}
+ul.lista{margin:0;padding:0}
+.mais{font-size:.85rem;color:var(--suave);margin:8px 0 0}
+
+/* ---- Filtros ---- */
+.painel{background:#fff;border:1px solid var(--borda);border-radius:14px;padding:14px 16px;margin-bottom:16px}
+.filtros{display:grid;grid-template-columns:1fr;gap:0 12px}
+.acoes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.acoes .limpar{grid-column:1/-1}
+.contagem{margin:0 0 10px;color:var(--suave);font-size:.9rem}
+
+/* ---- Lista: cards no celular, tabela no desktop ---- */
+table{width:100%;border-collapse:collapse;background:#fff}
+thead{display:none}
+tbody tr{display:block;background:#fff;border:1px solid var(--borda);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+tbody td{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border:0;text-align:right}
+tbody td::before{content:attr(data-label);font-weight:600;color:var(--suave);text-align:left;flex:0 0 auto}
+tbody td.filial{display:block;text-align:left;font-weight:700;color:var(--azul-900);padding-bottom:8px;border-bottom:1px solid var(--borda);margin-bottom:4px}
+tbody td.filial::before{display:none}
+tfoot td.vz{display:none}
+td.neg{color:var(--vermelho)} td.pos{color:var(--verde);font-weight:700}
+tfoot{display:block}
+tfoot tr{display:block;background:var(--azul-100);border-radius:14px;padding:12px 14px}
+tfoot td{display:flex;justify-content:space-between;padding:3px 0;font-weight:700}
+tfoot td::before{content:attr(data-label);color:var(--azul-900)}
+.vazio{text-align:center;padding:30px 10px;color:var(--suave);background:#fff;border:1px dashed var(--borda);border-radius:14px}
+
+@media (min-width:641px){
+  .resumo{grid-template-columns:repeat(3,1fr)}
+  .resumo4{grid-template-columns:repeat(4,1fr)}
+  .filtros{grid-template-columns:1.5fr 1fr 1fr 1fr}
+  .acoes{grid-template-columns:auto auto auto;justify-content:start}
+  .acoes .limpar{grid-column:auto}
+  .btn-primario{width:auto}
+  .btn-sair{height:40px}
+  table{border:1px solid var(--borda);border-radius:14px;overflow:hidden}
+  thead{display:table-header-group;background:var(--azul-700);color:#fff}
+  th{padding:12px;text-align:left;font-size:.85rem}
+  th.num,td.num{text-align:right}
+  tbody tr{display:table-row;border:0;border-radius:0;padding:0;margin:0}
+  tbody td{display:table-cell;padding:11px 12px;border-bottom:1px solid var(--borda);text-align:right}
+  tbody td::before{display:none}
+  tbody td.filial{display:table-cell;text-align:left;border-bottom:1px solid var(--borda);margin:0;padding-bottom:11px;font-weight:600}
+  tbody td.data{text-align:left;white-space:nowrap}
+  tbody tr:nth-child(even){background:var(--azul-50)}
+  tfoot{display:table-footer-group}
+  tfoot tr{display:table-row;border-radius:0}
+  tfoot td{display:table-cell;padding:12px;text-align:right}
+  tfoot td::before{display:none}
+  tfoot td:first-child{text-align:left}
+  tfoot td.vz{display:table-cell}
+  tbody td.st-td{text-align:left}
+}
+
+/* ---- Impressão / PDF: apenas o relatório, em formato de tabela ---- */
+.so-impressao{display:none}
+@media print{
+  body{background:#fff}
+  .login,.topo,.painel:not(.grafico),.contagem,.btn,.tabs,.seg,.acoes-conf,.intro{display:none!important}
+  .regra{break-inside:avoid;border:1px solid #bbb}
+  .regra summary{padding:8px 10px}
+  .so-impressao{display:block;margin-bottom:12px}
+  .so-impressao h2{margin:0 0 4px;color:var(--azul-900)}
+  .so-impressao p{margin:0;font-size:.85rem;color:#333}
+  main{padding:0;max-width:none}
+  .resumo{grid-template-columns:repeat(3,1fr);gap:8px}
+  .grafico{break-inside:avoid;margin-bottom:12px}
+  .card{padding:8px 10px;break-inside:avoid}.card strong{font-size:1.1rem}
+  table{border:1px solid #999;font-size:.8rem}
+  thead{display:table-header-group;background:#1a4fa3!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  th{padding:6px;text-align:left}th.num{text-align:right}
+  tbody tr{display:table-row;border:0;padding:0;margin:0;break-inside:avoid}
+  tbody td{display:table-cell;padding:5px 6px;border-bottom:1px solid #ccc;text-align:right}
+  tbody td::before{display:none}
+  tbody td.filial{display:table-cell;text-align:left;font-weight:400;margin:0}
+  tbody td.data{text-align:left}
+  tbody td.st-td{text-align:left}
+  tfoot td.vz{display:table-cell}
+  .resumo4{grid-template-columns:repeat(4,1fr);gap:8px}
+  tfoot{display:table-footer-group}tfoot tr{display:table-row;background:#e6efff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  tfoot td{display:table-cell;padding:6px;text-align:right}tfoot td::before{display:none}tfoot td:first-child{text-align:left}
+  @page{margin:12mm}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== TELA DE LOGIN ===== -->
+<section class="login" id="login">
+  <form class="login-box" id="formLogin" autocomplete="off">
+    <h1>Painel de Notas Fiscais</h1>
+    <p>Entre com seu usuário e senha para consultar.</p>
+    <div class="campo"><label for="usuario">Usuário</label>
+      <input id="usuario" type="text" autocapitalize="none" autocorrect="off" required></div>
+    <div class="campo"><label for="senha">Senha</label>
+      <input id="senha" type="password" required></div>
+    <p class="erro" id="erroLogin" role="alert"></p>
+    <button class="btn btn-primario" type="submit">Entrar</button>
+  </form>
+</section>
+
+<!-- ===== PAINEL (só é montado após o login) ===== -->
+<div id="app" hidden>
+  <header class="topo"><div class="topo-in">
+    <h1>Movimentação de Notas Fiscais<small id="atualizacao"></small></h1>
+    <button class="btn btn-sair" id="btnSair" type="button">Sair</button>
+  </div></header>
+
+  <main>
+    <nav class="tabs" role="tablist" aria-label="Seções do painel">
+      <button class="tab" role="tab" id="tabMov" data-tab="mov" aria-selected="true">Movimentação</button>
+      <button class="tab" role="tab" id="tabConf" data-tab="conf" aria-selected="false">Conformidade <span class="badge" id="badgeConf"></span></button>
+    </nav>
+
+  <!-- ===== ABA 1: MOVIMENTAÇÃO ===== -->
+  <section id="painelMov" role="tabpanel">
+    <div class="so-impressao"><h2>Movimentação de Notas Fiscais</h2><p id="infoImpressao"></p></div>
+
+    <section class="resumo" aria-label="Resumo">
+      <div class="card"><span>Valor real das notas</span><strong id="totReal">R$ 0,00</strong><em id="totQtd"></em></div>
+      <div class="card dev"><span>Devolução</span><strong id="totDev">R$ 0,00</strong></div>
+      <div class="card rec"><span>A receber</span><strong id="totRec">R$ 0,00</strong></div>
+    </section>
+
+
+    <section class="painel grafico" aria-label="Valor a receber por vencimento">
+      <h2>A receber por data de vencimento</h2>
+      <p class="sub" id="subGrafico"></p>
+      <div id="grafico"></div>
+    </section>
+
+    <section class="painel" aria-label="Filtros">
+      <div class="filtros">
+        <div class="campo"><label for="fFilial">Filial</label>
+          <select id="fFilial"><option value="">Todas as filiais</option></select></div>
+        <div class="campo"><label for="fStatus">Status</label>
+          <select id="fStatus"><option value="">Todos os status</option></select></div>
+        <div class="campo"><label for="fIni">Data inicial</label><input id="fIni" type="date"></div>
+        <div class="campo"><label for="fFim">Data final</label><input id="fFim" type="date"></div>
+      </div>
+      <div class="campo"><label for="fBusca">Buscar por nome da filial</label>
+        <input id="fBusca" type="search" placeholder="Ex.: Mateus, Posterus, 201..."></div>
+      <div class="acoes">
+        <button class="btn btn-sec" id="btnPdf" type="button">Exportar PDF</button>
+        <button class="btn btn-sec" id="btnExcel" type="button">Exportar Excel</button>
+        <button class="btn btn-sec limpar" id="btnLimpar" type="button">Limpar filtros</button>
+      </div>
+    </section>
+
+    <p class="contagem" id="contagem"></p>
+
+    <table id="tabela">
+      <thead><tr>
+        <th>Filial</th><th>Data de emissão</th><th>Status</th>
+        <th class="num">Valor real da nota</th><th class="num">Devolução</th><th class="num">A receber</th>
+      </tr></thead>
+      <tbody id="corpo"></tbody>
+      <tfoot><tr>
+        <td data-label="Total (filtrado)">Total (filtrado)</td><td class="vz"></td><td class="vz"></td>
+        <td data-label="Valor real" class="num" id="fReal"></td>
+        <td data-label="Devolução" class="num" id="fDev"></td>
+        <td data-label="A receber" class="num" id="fRec"></td>
+      </tr></tfoot>
+    </table>
+    <div class="vazio" id="vazio" hidden>Nenhuma nota encontrada com esses filtros.</div>
+  </section>
+
+  <!-- ===== ABA 2: CONFORMIDADE ===== -->
+  <section id="painelConf" role="tabpanel" hidden>
+    <div class="so-impressao"><h2>Conformidade das Notas Fiscais</h2><p id="infoConf"></p></div>
+    <section class="resumo4" aria-label="Resumo de conformidade">
+      <div class="card"><span>Notas analisadas</span><strong id="cfTotal">0</strong></div>
+      <div class="card rec"><span>Conformes</span><strong id="cfOk">0</strong><em id="cfOkPct"></em></div>
+      <div class="card dev"><span>Com inconformidade</span><strong id="cfErro">0</strong></div>
+      <div class="card amar"><span>Em atenção</span><strong id="cfAt">0</strong><em>vencidas e não quitadas</em></div>
+    </section>
+    <p class="intro">Verificações automáticas sobre <b>todas</b> as notas do painel (não dependem dos filtros da aba Movimentação). Toque em uma verificação para ver as notas envolvidas.</p>
+    <div class="seg" id="segConf" role="group" aria-label="Mostrar">
+      <button type="button" data-v="todas" aria-pressed="true">Todas</button>
+      <button type="button" data-v="ocorr" aria-pressed="false">Com ocorrências</button>
+      <button type="button" data-v="ok" aria-pressed="false">Conformes</button>
+    </div>
+    <div class="acoes acoes-conf" style="margin-bottom:14px">
+      <button class="btn btn-sec" id="btnPdfConf" type="button">Exportar PDF</button>
+      <button class="btn btn-sec" id="btnExcelConf" type="button">Exportar Excel</button>
+    </div>
+    <div id="regras"></div>
+  </section>
+  </main>
+</div>
+
+<script>
+/* =====================================================================
+   1) CONFIGURAÇÃO DE ACESSO  — troque aqui o usuário e a senha.
+   ATENÇÃO: esta proteção é BÁSICA. Em um site estático o código (e os
+   dados abaixo) ficam no arquivo enviado ao navegador, então quem souber
+   abrir o "código-fonte" consegue ler. Ela NÃO substitui segurança de
+   servidor. Para dados realmente sigilosos, use autenticação no servidor.
+   ===================================================================== */
+const CREDENCIAIS = { usuario: "cliente", senha: "nafta2026" };
+
+/* =====================================================================
+   2) DADOS — substitua este array pelos dados reais.
+   Campos: numero (nº do documento), filial, emissao, vencimento e pagamento (AAAA-MM-DD; pagamento "" se não pago), status (EM_ABERTO, AGENDADO, QUITADO), real, devolucao, receber (números com ponto).
+   ===================================================================== */
+const ATUALIZADO_EM = "22/10/2026"; // texto livre exibido no topo
+const NOTAS = [
+  {"numero": "263148216", "filial": "201 - MATEUS SUPERMERCADOS S.A. SUPER COHATRAC IV", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 1661.85, "devolucao": 0, "receber": 1661.85},
+  {"numero": "263148233", "filial": "425 - POSTERUS SUPERMERCADOS LTDA. S J RIBAMAR", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 929.7, "devolucao": 0, "receber": 929.7},
+  {"numero": "263148193", "filial": "29 - MATEUS SUPERMERCADOS S.A. - JD", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 2853.7, "devolucao": 2479.2, "receber": 374.5},
+  {"numero": "263148197", "filial": "269 - MATEUS SUPERMERCADOS S.A. MIX MAIOBAO UBATUBA", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 1624.4, "devolucao": 0, "receber": 1624.4},
+  {"numero": "263148228", "filial": "408 - MERCADINHO CARONE LTDA - ANJO DA GUARDA LJ 005", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 1079.5, "devolucao": 929.7, "receber": 149.8},
+  {"numero": "263148188", "filial": "11 - MATEUS SUPERMERCADOS S.A.- CID. OPERARIA", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 2356.55, "devolucao": 0, "receber": 2356.55},
+  {"numero": "263148226", "filial": "526 - MATEUS SUPERMERCADOS S.A. SUPER ALEMANHA", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 2778.8, "devolucao": 0, "receber": 2778.8},
+  {"numero": "263148189", "filial": "12 - MATEUS SUPERMERCADOS S.A. - RIO ANIL", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 74.9, "devolucao": 0, "receber": 74.9},
+  {"numero": "263148227", "filial": "539 - MATEUS SUPERMERCADOS MIX ANJO DA GUARDA", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 112.35, "devolucao": 0, "receber": 112.35},
+  {"numero": "263148203", "filial": "554 - MATEUS SUPERMERCADOS S.A SUPER MAIOBA", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 1079.5, "devolucao": 0, "receber": 1079.5},
+  {"numero": "263148231", "filial": "415 - POSTERUS SUPERMERCADOS LTDA. SAO BERNARDO", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 112.35, "devolucao": 0, "receber": 112.35},
+  {"numero": "263148207", "filial": "20 - MATEUS SUPERMERCADOS S.A. - MIX VINHAIS", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 5409.95, "devolucao": 72, "receber": 5337.95},
+  {"numero": "263148218", "filial": "218 - MATEUS SUPERMERCADOS S.A. SUPER SAO RAIMUNDO", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 1079.77, "devolucao": 0, "receber": 1079.77},
+  {"numero": "263148191", "filial": "17 - MATEUS SUPERMERCADOS S.A. MIX TIRIRICAL", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 1849.35, "devolucao": 0, "receber": 1849.35},
+  {"numero": "263148212", "filial": "96 - MATEUS SUPERMERCADOS S.A.-MIX JOAO PAULO", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 4172.9, "devolucao": 1547.97, "receber": 2624.93},
+  {"numero": "263148210", "filial": "34 - MATEUS SUPERMERCADOS S.A. HIPER RENASCENCA", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 149.8, "devolucao": 0, "receber": 149.8},
+  {"numero": "263148205", "filial": "16 - MATEUS SUPERMERCADOS S.A. - CALHAU", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 329.8, "devolucao": 0, "receber": 329.8},
+  {"numero": "263148230", "filial": "410 - MERCADINHO CARONE LTDA - SAO CRISTOVAO LJ 004", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 74.9, "devolucao": 0, "receber": 74.9},
+  {"numero": "263148196", "filial": "232 - MATEUS SUPERMERCADOS S.A SUPER GENERAL ARTHUR CARVALHO", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "2026-10-17", "status": "QUITADO", "real": 74.9, "devolucao": 0, "receber": 74.9},
+  {"numero": "263148215", "filial": "200 - MATEUS SUPERMERCADOS S.A. SUPER ANIL", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "2026-10-19", "status": "QUITADO", "real": 149.8, "devolucao": 0, "receber": 149.8},
+  {"numero": "263148186", "filial": "8 - MATEUS SUPERMERCADOS S.A. - TURU-SM08", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "2026-10-19", "status": "QUITADO", "real": 4068.5, "devolucao": 0, "receber": 4068.5},
+  {"numero": "263148208", "filial": "23 - MATEUS SUPERMERCADOS S.A. SUPER CAJAZEIRAS", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "2026-10-19", "status": "QUITADO", "real": 149.8, "devolucao": 0, "receber": 149.8},
+  {"numero": "263148192", "filial": "18 - MATEUS SUPERMERCADOS S.A. SUPER COHATRAC", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "2026-10-19", "status": "QUITADO", "real": 2554.1, "devolucao": 0, "receber": 2554.1},
+  {"numero": "263148199", "filial": "502 - MATEUS SUPERMERCADOS S.A. SUPER SANTA CLARA", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "2026-10-19", "status": "QUITADO", "real": 224.7, "devolucao": 0, "receber": 224.7},
+  {"numero": "263148195", "filial": "93 - MATEUS SUPERMERCADOS S.A. MIX MAIOBAO", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "2026-10-19", "status": "QUITADO", "real": 699.4, "devolucao": 0, "receber": 699.4},
+  {"numero": "263148234", "filial": "477 - MCJ SUPERMERCADOS LTDA PARQUE ATHENAS", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "", "status": "EM_ABERTO", "real": 1934.3, "devolucao": 0, "receber": 1934.3},
+  {"numero": "263148219", "filial": "255 - MATEUS SUPERMERCADOS S A MIX ARACAGY", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "2026-10-19", "status": "QUITADO", "real": 7517.2, "devolucao": 0, "receber": 7517.2},
+  {"numero": "263148179", "filial": "7 - MATEUS SUPERMERCADOS S.A. - COHAMA", "emissao": "2026-10-14", "vencimento": "2026-11-10", "pagamento": "2026-10-19", "status": "QUITADO", "real": 6927.6, "devolucao": 180, "receber": 6747.6},
+  {"numero": "263146393", "filial": "18 - MATEUS SUPERMERCADOS S.A. SUPER COHATRAC", "emissao": "2026-10-10", "vencimento": "2026-11-10", "pagamento": "2026-10-19", "status": "QUITADO", "real": 4648.5, "devolucao": 883.22, "receber": 3765.28},
+  {"numero": "263146381", "filial": "16 - MATEUS SUPERMERCADOS S.A. - CALHAU", "emissao": "2026-10-10", "vencimento": "2026-11-10", "pagamento": "2026-10-14", "status": "QUITADO", "real": 6198, "devolucao": 0, "receber": 6198},
+  {"numero": "263146365", "filial": "34 - MATEUS SUPERMERCADOS S.A. HIPER RENASCENCA", "emissao": "2026-10-10", "vencimento": "2026-11-02", "pagamento": "2026-10-14", "status": "QUITADO", "real": 9477, "devolucao": 0, "receber": 9477},
+  {"numero": "263143831", "filial": "409 - MERCADINHO CARONE LTDA - MAIOBAO LJ 006", "emissao": "2026-10-07", "vencimento": "2026-11-02", "pagamento": "", "status": "EM_ABERTO", "real": 3248.8, "devolucao": 0, "receber": 3248.8},
+  {"numero": "263143837", "filial": "425 - POSTERUS SUPERMERCADOS LTDA. S J RIBAMAR", "emissao": "2026-10-07", "vencimento": "2026-11-02", "pagamento": "", "status": "EM_ABERTO", "real": 1079.5, "devolucao": 0, "receber": 1079.5},
+  {"numero": "263143830", "filial": "408 - MERCADINHO CARONE LTDA - ANJO DA GUARDA LJ 005", "emissao": "2026-10-07", "vencimento": "2026-11-02", "pagamento": "", "status": "EM_ABERTO", "real": 2319.1, "devolucao": 0, "receber": 2319.1},
+  {"numero": "263143832", "filial": "410 - MERCADINHO CARONE LTDA - SAO CRISTOVAO LJ 004", "emissao": "2026-10-07", "vencimento": "2026-11-02", "pagamento": "", "status": "EM_ABERTO", "real": 74.9, "devolucao": 0, "receber": 74.9},
+  {"numero": "263143844", "filial": "16 - MATEUS SUPERMERCADOS S.A. - CALHAU", "emissao": "2026-10-07", "vencimento": "2026-11-02", "pagamento": "2026-10-14", "status": "QUITADO", "real": 5158.3, "devolucao": 360, "receber": 4798.3},
+  {"numero": "263143838", "filial": "477 - MCJ SUPERMERCADOS LTDA PARQUE ATHENAS", "emissao": "2026-10-07", "vencimento": "2026-11-02", "pagamento": "", "status": "EM_ABERTO", "real": 2244.2, "devolucao": 0, "receber": 2244.2},
+  {"numero": "263143784", "filial": "18 - MATEUS SUPERMERCADOS S.A. SUPER COHATRAC", "emissao": "2026-10-06", "vencimento": "2026-11-10", "pagamento": "2026-10-19", "status": "QUITADO", "real": 1624.4, "devolucao": 0, "receber": 1624.4},
+  {"numero": "263143780", "filial": "12 - MATEUS SUPERMERCADOS S.A. - RIO ANIL", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-19", "status": "QUITADO", "real": 1624.4, "devolucao": 0, "receber": 1624.4},
+  {"numero": "263143777", "filial": "8 - MATEUS SUPERMERCADOS S.A. - TURU-SM08", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-19", "status": "QUITADO", "real": 2209.1, "devolucao": 0, "receber": 2209.1},
+  {"numero": "263143803", "filial": "30 - MATEUS SUPERMERCADOS S.A. SUPER BACANGA", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-19", "status": "QUITADO", "real": 3323.7, "devolucao": 0, "receber": 3323.7},
+  {"numero": "263143822", "filial": "259 - MATEUS SUPERMERCADOS S A MIX FORQUILHA", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-19", "status": "QUITADO", "real": 349.7, "devolucao": 76.17, "receber": 273.53},
+  {"numero": "263143824", "filial": "526 - MATEUS SUPERMERCADOS S.A. SUPER ALEMANHA", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-19", "status": "QUITADO", "real": 2099.1, "devolucao": 0, "receber": 2099.1},
+  {"numero": "263143825", "filial": "539 - MATEUS SUPERMERCADOS MIX ANJO DA GUARDA", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-19", "status": "QUITADO", "real": 1971.75, "devolucao": 0, "receber": 1971.75},
+  {"numero": "263143817", "filial": "218 - MATEUS SUPERMERCADOS S.A. SUPER SAO RAIMUNDO", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-19", "status": "QUITADO", "real": 149.8, "devolucao": 0, "receber": 149.8},
+  {"numero": "263143802", "filial": "20 - MATEUS SUPERMERCADOS S.A. - MIX VINHAIS", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-14", "status": "QUITADO", "real": 5218.35, "devolucao": 0, "receber": 5218.35},
+  {"numero": "263143811", "filial": "96 - MATEUS SUPERMERCADOS S.A.-MIX JOAO PAULO", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-19", "status": "QUITADO", "real": 2879, "devolucao": 0, "receber": 2879},
+  {"numero": "263143779", "filial": "11 - MATEUS SUPERMERCADOS S.A.- CID. OPERARIA", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-19", "status": "QUITADO", "real": 149.8, "devolucao": 0, "receber": 149.8},
+  {"numero": "263143820", "filial": "255 - MATEUS SUPERMERCADOS S A MIX ARACAGY", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-14", "status": "QUITADO", "real": 10416.8, "devolucao": 0, "receber": 10416.8},
+  {"numero": "263143782", "filial": "17 - MATEUS SUPERMERCADOS S.A. MIX TIRIRICAL", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-19", "status": "QUITADO", "real": 1849.1, "devolucao": 0, "receber": 1849.1},
+  {"numero": "263143809", "filial": "34 - MATEUS SUPERMERCADOS S.A. HIPER RENASCENCA", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-14", "status": "QUITADO", "real": 10377, "devolucao": 0, "receber": 10377},
+  {"numero": "263143790", "filial": "93 - MATEUS SUPERMERCADOS S.A. MIX MAIOBAO", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-14", "status": "QUITADO", "real": 8507.3, "devolucao": 0, "receber": 8507.3},
+  {"numero": "263143816", "filial": "201 - MATEUS SUPERMERCADOS S.A. SUPER COHATRAC IV", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-19", "status": "QUITADO", "real": 2481.55, "devolucao": 0, "receber": 2481.55},
+  {"numero": "263143771", "filial": "7 - MATEUS SUPERMERCADOS S.A. - COHAMA", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-14", "status": "QUITADO", "real": 7502.7, "devolucao": 59.92, "receber": 7442.78},
+  {"numero": "263143806", "filial": "31 - MATEUS SUPERMERCADOS S.A. SUPER PATIO NORTE", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-19", "status": "QUITADO", "real": 1549.5, "devolucao": 0, "receber": 1549.5},
+  {"numero": "263143786", "filial": "27 - MATEUS SUPERMERCADOS S.A. SUPER TURU", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-19", "status": "QUITADO", "real": 1549.5, "devolucao": 0, "receber": 1549.5},
+  {"numero": "263143792", "filial": "269 - MATEUS SUPERMERCADOS S.A. MIX MAIOBAO UBATUBA", "emissao": "2026-10-06", "vencimento": "2026-11-02", "pagamento": "2026-10-19", "status": "QUITADO", "real": 3099, "devolucao": 1270.59, "receber": 1828.41},
+  {"numero": "263142562", "filial": "16 - MATEUS SUPERMERCADOS S.A. - CALHAU", "emissao": "2026-10-02", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 1500, "devolucao": 0, "receber": 1500},
+  {"numero": "263142102", "filial": "23 - MATEUS SUPERMERCADOS S.A. SUPER CAJAZEIRAS", "emissao": "2026-10-02", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 3000, "devolucao": 0, "receber": 3000},
+  {"numero": "263141936", "filial": "410 - MERCADINHO CARONE LTDA - SAO CRISTOVAO LJ 004", "emissao": "2026-10-01", "vencimento": "2026-10-15", "pagamento": "2026-10-16", "status": "QUITADO", "real": 600, "devolucao": 0, "receber": 600},
+  {"numero": "263141822", "filial": "217 - MATEUS SUPERMERCADOS S.A. SUPER RAPOSA", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 1500, "devolucao": 150, "receber": 1350},
+  {"numero": "263141915", "filial": "526 - MATEUS SUPERMERCADOS S.A. SUPER ALEMANHA", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 1500, "devolucao": 0, "receber": 1500},
+  {"numero": "263141940", "filial": "425 - POSTERUS SUPERMERCADOS LTDA. S J RIBAMAR", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "", "status": "EM_ABERTO", "real": 600, "devolucao": 0, "receber": 600},
+  {"numero": "263141892", "filial": "201 - MATEUS SUPERMERCADOS S.A. SUPER COHATRAC IV", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 1500, "devolucao": 0, "receber": 1500},
+  {"numero": "263141909", "filial": "259 - MATEUS SUPERMERCADOS S A MIX FORQUILHA", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 1680, "devolucao": 216.5, "receber": 1463.5},
+  {"numero": "263141841", "filial": "20 - MATEUS SUPERMERCADOS S.A. - MIX VINHAIS", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 3000, "devolucao": 0, "receber": 3000},
+  {"numero": "263141859", "filial": "30 - MATEUS SUPERMERCADOS S.A. SUPER BACANGA", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 900, "devolucao": 0, "receber": 900},
+  {"numero": "263141888", "filial": "200 - MATEUS SUPERMERCADOS S.A. SUPER ANIL", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 1500, "devolucao": 0, "receber": 1500},
+  {"numero": "263141848", "filial": "23 - MATEUS SUPERMERCADOS S.A. SUPER CAJAZEIRAS", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 1500, "devolucao": 0, "receber": 1500},
+  {"numero": "263141794", "filial": "18 - MATEUS SUPERMERCADOS S.A. SUPER COHATRAC", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 1500, "devolucao": 0, "receber": 1500},
+  {"numero": "263141898", "filial": "218 - MATEUS SUPERMERCADOS S.A. SUPER SAO RAIMUNDO", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 540, "devolucao": 0, "receber": 540},
+  {"numero": "263141881", "filial": "96 - MATEUS SUPERMERCADOS S.A.-MIX JOAO PAULO", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 330, "devolucao": 218, "receber": 112},
+  {"numero": "263141930", "filial": "477 - MCJ SUPERMERCADOS LTDA PARQUE ATHENAS", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "", "status": "EM_ABERTO", "real": 900, "devolucao": 0, "receber": 900},
+  {"numero": "263141739", "filial": "7 - MATEUS SUPERMERCADOS S.A. - COHAMA", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 5800, "devolucao": 280, "receber": 5520},
+  {"numero": "263141799", "filial": "27 - MATEUS SUPERMERCADOS S.A. SUPER TURU", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 1500, "devolucao": 0, "receber": 1500},
+  {"numero": "263141826", "filial": "269 - MATEUS SUPERMERCADOS S.A. MIX MAIOBAO UBATUBA", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 2040, "devolucao": 0, "receber": 2040},
+  {"numero": "263141772", "filial": "8 - MATEUS SUPERMERCADOS S.A. - TURU-SM08", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 1800, "devolucao": 0, "receber": 1800},
+  {"numero": "263141816", "filial": "93 - MATEUS SUPERMERCADOS S.A. MIX MAIOBAO", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 1980, "devolucao": 314, "receber": 1666},
+  {"numero": "263141901", "filial": "255 - MATEUS SUPERMERCADOS S A MIX ARACAGY", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 10040, "devolucao": 0, "receber": 10040},
+  {"numero": "263141922", "filial": "408 - MERCADINHO CARONE LTDA - ANJO DA GUARDA LJ 005", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "", "status": "EM_ABERTO", "real": 900, "devolucao": 0, "receber": 900},
+  {"numero": "263141804", "filial": "29 - MATEUS SUPERMERCADOS S.A. - JD", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 80, "devolucao": 0, "receber": 80},
+  {"numero": "263141874", "filial": "34 - MATEUS SUPERMERCADOS S.A. HIPER RENASCENCA", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 10020, "devolucao": 0, "receber": 10020},
+  {"numero": "263141924", "filial": "409 - MERCADINHO CARONE LTDA - MAIOBAO LJ 006", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "", "status": "EM_ABERTO", "real": 900, "devolucao": 0, "receber": 900},
+  {"numero": "263141781", "filial": "12 - MATEUS SUPERMERCADOS S.A. - RIO ANIL", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 1500, "devolucao": 0, "receber": 1500},
+  {"numero": "263141832", "filial": "16 - MATEUS SUPERMERCADOS S.A. - CALHAU", "emissao": "2026-10-01", "vencimento": "2026-11-02", "pagamento": "2026-10-06", "status": "QUITADO", "real": 3600, "devolucao": 0, "receber": 3600},
+  {"numero": "263141100", "filial": "7 - MATEUS SUPERMERCADOS S.A. - COHAMA", "emissao": "2026-09-30", "vencimento": "2026-11-02", "pagamento": "2026-10-05", "status": "QUITADO", "real": 6700, "devolucao": 660, "receber": 6040},
+  {"numero": "263140524", "filial": "31 - MATEUS SUPERMERCADOS S.A. SUPER PATIO NORTE", "emissao": "2026-09-30", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 900, "devolucao": 0, "receber": 900},
+  {"numero": "263139554", "filial": "31 - MATEUS SUPERMERCADOS S.A. SUPER PATIO NORTE", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 300, "devolucao": 0, "receber": 300},
+  {"numero": "263139561", "filial": "539 - MATEUS SUPERMERCADOS MIX ANJO DA GUARDA", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 195, "devolucao": 0, "receber": 195},
+  {"numero": "263139567", "filial": "425 - POSTERUS SUPERMERCADOS LTDA. S J RIBAMAR", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "", "status": "AGENDADO", "real": 65, "devolucao": 0, "receber": 65},
+  {"numero": "263139511", "filial": "217 - MATEUS SUPERMERCADOS S.A. SUPER RAPOSA", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 130, "devolucao": 0, "receber": 130},
+  {"numero": "263139564", "filial": "410 - MERCADINHO CARONE LTDA - SAO CRISTOVAO LJ 004", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "", "status": "EM_ABERTO", "real": 65, "devolucao": 0, "receber": 65},
+  {"numero": "263139524", "filial": "554 - MATEUS SUPERMERCADOS S.A SUPER MAIOBA", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 97.5, "devolucao": 0, "receber": 97.5},
+  {"numero": "263139562", "filial": "408 - MERCADINHO CARONE LTDA - ANJO DA GUARDA LJ 005", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "", "status": "EM_ABERTO", "real": 1055, "devolucao": 0, "receber": 1055},
+  {"numero": "263139553", "filial": "30 - MATEUS SUPERMERCADOS S.A. SUPER BACANGA", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 130, "devolucao": 0, "receber": 130},
+  {"numero": "263139565", "filial": "415 - POSTERUS SUPERMERCADOS LTDA. SAO BERNARDO", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "", "status": "AGENDADO", "real": 97.5, "devolucao": 0, "receber": 97.5},
+  {"numero": "263138708", "filial": "17 - MATEUS SUPERMERCADOS S.A. MIX TIRIRICAL", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 800, "devolucao": 265, "receber": 535},
+  {"numero": "263139556", "filial": "96 - MATEUS SUPERMERCADOS S.A.-MIX JOAO PAULO", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 705, "devolucao": 0, "receber": 705},
+  {"numero": "263139560", "filial": "259 - MATEUS SUPERMERCADOS S A MIX FORQUILHA", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 2185, "devolucao": 0, "receber": 2185},
+  {"numero": "263139552", "filial": "16 - MATEUS SUPERMERCADOS S.A. - CALHAU", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 3050, "devolucao": 0, "receber": 3050},
+  {"numero": "263139522", "filial": "232 - MATEUS SUPERMERCADOS S.A SUPER GENERAL ARTHUR CARVALHO", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 2395, "devolucao": 0, "receber": 2395},
+  {"numero": "263138696", "filial": "7 - MATEUS SUPERMERCADOS S.A. - COHAMA", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 4600, "devolucao": 414, "receber": 4186},
+  {"numero": "263138700", "filial": "8 - MATEUS SUPERMERCADOS S.A. - TURU-SM08", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 475, "devolucao": 210, "receber": 265},
+  {"numero": "263139507", "filial": "29 - MATEUS SUPERMERCADOS S.A. - JD", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 440, "devolucao": 0, "receber": 440},
+  {"numero": "263139558", "filial": "201 - MATEUS SUPERMERCADOS S.A. SUPER COHATRAC IV", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 1765, "devolucao": 80, "receber": 1685},
+  {"numero": "263139563", "filial": "409 - MERCADINHO CARONE LTDA - MAIOBAO LJ 006", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "", "status": "EM_ABERTO", "real": 65, "devolucao": 0, "receber": 65},
+  {"numero": "263139557", "filial": "200 - MATEUS SUPERMERCADOS S.A. SUPER ANIL", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 615, "devolucao": 200, "receber": 415},
+  {"numero": "263139510", "filial": "93 - MATEUS SUPERMERCADOS S.A. MIX MAIOBAO", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 1845, "devolucao": 0, "receber": 1845},
+  {"numero": "263139555", "filial": "34 - MATEUS SUPERMERCADOS S.A. HIPER RENASCENCA", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 9940, "devolucao": 0, "receber": 9940},
+  {"numero": "263139566", "filial": "418 - POSTERUS SUPERMERCADOS LTDA. DIVINEIA", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "", "status": "AGENDADO", "real": 120, "devolucao": 0, "receber": 120},
+  {"numero": "263139516", "filial": "225 - EMPORIO SPAZIO MATEUS OLHO D AGUA", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "", "status": "AGENDADO", "real": 1500, "devolucao": 0, "receber": 1500},
+  {"numero": "263139568", "filial": "477 - MCJ SUPERMERCADOS LTDA PARQUE ATHENAS", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "", "status": "AGENDADO", "real": 2340, "devolucao": 600, "receber": 1740},
+  {"numero": "263139402", "filial": "27 - MATEUS SUPERMERCADOS S.A. SUPER TURU", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 882.5, "devolucao": 140, "receber": 742.5},
+  {"numero": "263139390", "filial": "255 - MATEUS SUPERMERCADOS S A MIX ARACAGY", "emissao": "2026-09-28", "vencimento": "2026-10-20", "pagamento": "2026-10-05", "status": "QUITADO", "real": 7050, "devolucao": 1030, "receber": 6020}
+];
+/* Lançamentos de devolução (aba "devolucoes" da planilha). "nf" = número do documento da nota. */
+const DEVOLUCOES = [
+  {"nf": "263148193", "valor": 2479.2, "emissao": "2026-10-17", "status": "QUITADO"},
+  {"nf": "263148228", "valor": 929.7, "emissao": "2026-10-17", "status": "QUITADO"},
+  {"nf": "263148207", "valor": 72, "emissao": "2026-10-16", "status": "QUITADO"},
+  {"nf": "263148212", "valor": 1547.97, "emissao": "2026-10-16", "status": "QUITADO"},
+  {"nf": "263148179", "valor": 180, "emissao": "2026-10-15", "status": "QUITADO"},
+  {"nf": "263146393", "valor": 883.22, "emissao": "2026-10-14", "status": "QUITADO"},
+  {"nf": "263143822", "valor": 76.17, "emissao": "2026-10-10", "status": "QUITADO"},
+  {"nf": "263143844", "valor": 360, "emissao": "2026-10-09", "status": "QUITADO"},
+  {"nf": "263143771", "valor": 59.92, "emissao": "2026-10-09", "status": "QUITADO"},
+  {"nf": "263143792", "valor": 1270.59, "emissao": "2026-10-08", "status": "QUITADO"},
+  {"nf": "263141822", "valor": 150, "emissao": "2026-10-03", "status": "QUITADO"},
+  {"nf": "263141909", "valor": 216.5, "emissao": "2026-10-03", "status": "QUITADO"},
+  {"nf": "263141881", "valor": 218, "emissao": "2026-10-02", "status": "QUITADO"},
+  {"nf": "263141739", "valor": 280, "emissao": "2026-10-02", "status": "QUITADO"},
+  {"nf": "263141816", "valor": 314, "emissao": "2026-10-02", "status": "QUITADO"},
+  {"nf": "263141100", "valor": 660, "emissao": "2026-10-01", "status": "QUITADO"},
+  {"nf": "263138708", "valor": 265, "emissao": "2026-09-30", "status": "QUITADO"},
+  {"nf": "263138696", "valor": 414, "emissao": "2026-09-29", "status": "QUITADO"},
+  {"nf": "263138700", "valor": 210, "emissao": "2026-09-29", "status": "QUITADO"},
+  {"nf": "263139558", "valor": 80, "emissao": "2026-09-29", "status": "QUITADO"},
+  {"nf": "263139557", "valor": 200, "emissao": "2026-09-29", "status": "QUITADO"},
+  {"nf": "263139568", "valor": 600, "emissao": "2026-09-29", "status": "QUITADO"},
+  {"nf": "263139402", "valor": 140, "emissao": "2026-09-29", "status": "QUITADO"},
+  {"nf": "263139390", "valor": 1030, "emissao": "2026-09-29", "status": "QUITADO"}
+];
+
+/* =====================================================================
+   3) CÓDIGO DO PAINEL
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const brl = n => n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const dataBR = iso => iso.split("-").reverse().join("/");           // 2026-10-14 -> 14/10/2026
+const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ROTULO_STATUS = {EM_ABERTO:"Em aberto",AGENDADO:"Agendado",QUITADO:"Quitado"};
+const rotulo = s => ROTULO_STATUS[s] || String(s).replace(/_/g," ").toLowerCase().replace(/^./,c=>c.toUpperCase());
+const stClasse = s => ROTULO_STATUS[s] ? s : "OUTRO";
+let visiveis = [];                                                    // linhas após filtro
+
+/* ---- Login ---- */
+function entrar(){ $("login").hidden = true; $("app").hidden = false; iniciarPainel(); }
+$("formLogin").addEventListener("submit", e=>{
+  e.preventDefault();
+  if($("usuario").value.trim()===CREDENCIAIS.usuario && $("senha").value===CREDENCIAIS.senha){
+    try{ sessionStorage.setItem("painelOk","1"); }catch(_){}
+    entrar();
+  } else { $("erroLogin").textContent="Usuário ou senha incorretos."; $("senha").value=""; }
+});
+$("btnSair").addEventListener("click",()=>{
+  try{ sessionStorage.removeItem("painelOk"); }catch(_){}
+  location.reload();
+});
+try{ if(sessionStorage.getItem("painelOk")==="1") entrar(); }catch(_){}
+
+/* ---- Inicialização: filtros e eventos ---- */
+function iniciarPainel(){
+  $("atualizacao").textContent = ATUALIZADO_EM ? "Atualizado em "+ATUALIZADO_EM : "";
+  const filiais=[...new Set(NOTAS.map(n=>n.filial))].sort((a,b)=>a.localeCompare(b,"pt-BR",{numeric:true}));
+  const stats=[...new Set(NOTAS.map(n=>n.status))].sort();
+  $("fStatus").innerHTML='<option value="">Todos os status</option>'+stats.map(s=>`<option value="${esc(s)}">${esc(rotulo(s))}</option>`).join("");
+  $("fFilial").innerHTML='<option value="">Todas as filiais</option>'+filiais.map(f=>`<option>${esc(f)}</option>`).join("");
+  ["fFilial","fStatus","fIni","fFim"].forEach(id=>$(id).addEventListener("change",aplicar));
+  $("fBusca").addEventListener("input",aplicar);
+  $("btnLimpar").addEventListener("click",()=>{["fFilial","fStatus","fIni","fFim","fBusca"].forEach(id=>$(id).value="");aplicar();});
+  $("btnPdf").addEventListener("click",exportarPDF);
+  $("btnExcel").addEventListener("click",exportarExcel);
+  $("tabMov").addEventListener("click",()=>abrirAba("mov"));
+  $("tabConf").addEventListener("click",()=>abrirAba("conf"));
+  $("btnPdfConf").addEventListener("click",()=>{document.querySelectorAll("#regras details").forEach(d=>d.open=true);window.print();});
+  $("btnExcelConf").addEventListener("click",exportarConformidade);
+  $("segConf").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+    document.querySelectorAll("#segConf button").forEach(x=>x.setAttribute("aria-pressed",x===b));desenharRegras(b.dataset.v);});
+  analisar(); desenharConformidade();
+  aplicar();
+}
+
+/* ---- Filtra e redesenha ---- */
+function aplicar(){
+  const f=$("fFilial").value, st=$("fStatus").value, ini=$("fIni").value, fim=$("fFim").value;
+  const q=$("fBusca").value.trim().toLowerCase();
+  visiveis = NOTAS.filter(n=>
+    (!f||n.filial===f) && (!st||n.status===st) && (!ini||n.emissao>=ini) && (!fim||n.emissao<=fim) &&
+    (!q||n.filial.toLowerCase().includes(q))
+  ).sort((a,b)=>b.emissao.localeCompare(a.emissao)||a.filial.localeCompare(b.filial,"pt-BR"));
+
+  const soma=k=>visiveis.reduce((s,n)=>s+n[k],0);
+  const tr=soma("real"), td=soma("devolucao"), tc=soma("receber");
+  $("totReal").textContent=$("fReal").textContent=brl(tr);
+  $("totDev").textContent=$("fDev").textContent=brl(td);
+  $("totRec").textContent=$("fRec").textContent=brl(tc);
+  $("totQtd").textContent=visiveis.length+" nota(s)";
+  $("contagem").textContent=visiveis.length+" de "+NOTAS.length+" notas exibidas";
+  $("vazio").hidden = visiveis.length>0;
+  $("tabela").hidden = visiveis.length===0;
+
+  $("corpo").innerHTML = visiveis.map(n=>`<tr>
+    <td class="filial">${esc(n.filial)}</td>
+    <td class="data" data-label="Data de emissão">${dataBR(n.emissao)}</td>
+    <td class="st-td" data-label="Status"><span class="st st-${stClasse(n.status)}">${esc(rotulo(n.status))}</span></td>
+    <td class="num" data-label="Valor real da nota">${brl(n.real)}</td>
+    <td class="num ${n.devolucao>0?"neg":""}" data-label="Devolução">${brl(n.devolucao)}</td>
+    <td class="num pos" data-label="A receber">${brl(n.receber)}</td></tr>`).join("");
+
+
+  desenharGrafico(visiveis);
+
+  const partes=[];
+  if(f)partes.push("Filial: "+f); if(st)partes.push("Status: "+rotulo(st)); if(ini)partes.push("De "+dataBR(ini)); if(fim)partes.push("até "+dataBR(fim)); if(q)partes.push('Busca: "'+q+'"');
+  $("infoImpressao").textContent=(partes.length?partes.join(" · ")+" · ":"")+"Gerado em "+new Date().toLocaleString("pt-BR");
+}
+
+
+/* ---- Gráfico: soma do "A receber" agrupada por data de vencimento (respeita os filtros) ---- */
+function desenharGrafico(linhas){
+  const por={};
+  linhas.forEach(n=>{por[n.vencimento]=(por[n.vencimento]||0)+n.receber;});
+  const datas=Object.keys(por).sort();
+  const max=Math.max(...datas.map(d=>por[d]),1);
+  $("subGrafico").textContent=datas.length?datas.length+" data(s) de vencimento · valores ainda a receber das notas filtradas":"";
+  $("grafico").innerHTML=datas.length?datas.map(d=>{
+    const v=por[d], dd=dataBR(d).slice(0,5)+"/"+d.slice(2,4);
+    return `<div class="gl"><span class="d">${dd}</span><span class="trilho"><span class="barra" style="display:block;width:${(v/max*100).toFixed(1)}%"></span></span><span class="v">${brl(v)}</span></div>`;
+  }).join(""):'<div class="vazio">Sem dados para o gráfico.</div>';
+}
+
+/* ---- Abas ---- */
+function abrirAba(qual){
+  $("painelMov").hidden = qual!=="mov"; $("painelConf").hidden = qual!=="conf";
+  $("tabMov").setAttribute("aria-selected",qual==="mov"); $("tabConf").setAttribute("aria-selected",qual==="conf");
+}
+
+/* =====================================================================
+   CONFORMIDADE — cada regra abaixo é uma verificação automática.
+   tipo "erro"    = inconformidade (dado inconsistente, precisa de correção)
+   tipo "atencao" = pendência (não é erro de dado, mas merece acompanhamento)
+   Para criar uma nova regra, basta acrescentar um item na lista REGRAS.
+   ===================================================================== */
+const TOL = 0.01;                                    // tolerância de centavos
+const dif = (a,b) => Math.abs(a-b) > TOL;
+let regras = [];
+
+function hojeISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+
+function analisar(){
+  const hoje = hojeISO();
+  const qtdDoc = {}; NOTAS.forEach(n=>qtdDoc[n.numero]=(qtdDoc[n.numero]||0)+1);
+  const devPorNF = {}; DEVOLUCOES.forEach(d=>devPorNF[d.nf]=(devPorNF[d.nf]||0)+d.valor);
+  const numeros = new Set(NOTAS.map(n=>n.numero));
+  const item = (n,msg)=>({numero:n.numero,filial:n.filial,emissao:n.emissao,vencimento:n.vencimento,valor:n.real,msg});
+  const porNota = fn => () => NOTAS.map(n=>{const m=fn(n);return m?item(n,m):null;}).filter(Boolean);
+
+  const defs = [
+    {id:"calculo",tipo:"erro",titulo:"Cálculo do valor a receber",
+     desc:"O valor a receber deve ser igual ao valor real da nota menos a devolução.",
+     itens:porNota(n=>dif(n.real-n.devolucao,n.receber)?`Esperado ${brl(n.real-n.devolucao)}, mas consta ${brl(n.receber)}.`:null)},
+    {id:"devmaior",tipo:"erro",titulo:"Devolução dentro do valor da nota",
+     desc:"A devolução não pode ser maior que o valor faturado da nota.",
+     itens:porNota(n=>n.devolucao>n.real+TOL?`Devolução ${brl(n.devolucao)} maior que a nota (${brl(n.real)}).`:null)},
+    {id:"devlanc",tipo:"erro",titulo:"Devolução confere com os lançamentos",
+     desc:"A devolução da nota deve ser igual à soma dos lançamentos de devolução da mesma NF.",
+     itens:porNota(n=>{const l=devPorNF[n.numero]||0;return dif(n.devolucao,l)?`Na nota: ${brl(n.devolucao)} · lançado em devoluções: ${brl(l)}.`:null;})},
+    {id:"orfa",tipo:"erro",titulo:"Devoluções com nota correspondente",
+     desc:"Todo lançamento de devolução precisa ter a nota fiscal correspondente na movimentação.",
+     itens:()=>DEVOLUCOES.filter(d=>!numeros.has(d.nf)).map(d=>({numero:d.nf,filial:"Nota não encontrada na movimentação",emissao:d.emissao,vencimento:"",valor:d.valor,msg:`Devolução de ${brl(d.valor)} sem nota correspondente.`}))},
+    {id:"datas",tipo:"erro",titulo:"Datas coerentes",
+     desc:"O vencimento e o pagamento não podem ser anteriores à data de emissão.",
+     itens:porNota(n=>{const m=[];if(n.vencimento<n.emissao)m.push(`Vencimento (${dataBR(n.vencimento)}) anterior à emissão.`);
+       if(n.pagamento&&n.pagamento<n.emissao)m.push(`Pagamento (${dataBR(n.pagamento)}) anterior à emissão.`);return m.join(" ")||null;})},
+    {id:"status",tipo:"erro",titulo:"Status coerente com o pagamento",
+     desc:"Nota quitada deve ter data de pagamento; nota não quitada não deve ter.",
+     itens:porNota(n=>n.status==="QUITADO"&&!n.pagamento?"Quitada sem data de pagamento.":(n.status!=="QUITADO"&&n.pagamento?`Status ${rotulo(n.status)} mas com pagamento em ${dataBR(n.pagamento)}.`:null))},
+    {id:"valores",tipo:"erro",titulo:"Valores válidos",
+     desc:"O valor da nota deve ser maior que zero; devolução e valor a receber não podem ser negativos.",
+     itens:porNota(n=>{const m=[];if(n.real<=0)m.push("Valor da nota zerado ou negativo.");if(n.devolucao<0)m.push("Devolução negativa.");if(n.receber<0)m.push("Valor a receber negativo.");return m.join(" ")||null;})},
+    {id:"dup",tipo:"erro",titulo:"Número de documento único",
+     desc:"Não pode haver duas notas com o mesmo número de documento.",
+     itens:porNota(n=>qtdDoc[n.numero]>1?`Número repetido em ${qtdDoc[n.numero]} notas.`:null)},
+    {id:"vencida",tipo:"atencao",titulo:"Notas vencidas e não quitadas",
+     desc:"Notas com vencimento anterior a hoje que ainda não constam como quitadas.",
+     itens:porNota(n=>n.status!=="QUITADO"&&n.vencimento<hoje?`Vencida em ${dataBR(n.vencimento)} · status ${rotulo(n.status)}.`:null)}
+  ];
+  regras = defs.map(r=>({...r,itens:r.itens()}));
+}
+
+/* Texto/estado de uma regra: Conforme, Inconformidade ou Atenção */
+const estado = r => !r.itens.length ? {cls:"ok",ic:"✓",txt:"Conforme"} : r.tipo==="erro" ? {cls:"erro",ic:"✕",txt:r.itens.length+" inconformidade(s)"} : {cls:"atencao",ic:"!",txt:r.itens.length+" em atenção"};
+
+function desenharConformidade(){
+  const comTipo = t => new Set(regras.filter(r=>r.tipo===t).flatMap(r=>r.itens.map(i=>i.numero)).filter(nf=>NOTAS.some(n=>n.numero===nf)));
+  const erros = comTipo("erro"), aten = comTipo("atencao");
+  const total = NOTAS.length, ok = NOTAS.filter(n=>!erros.has(n.numero)).length;
+  $("cfTotal").textContent = total;
+  $("cfOk").textContent = ok; $("cfOkPct").textContent = total?(ok/total*100).toFixed(1).replace(".",",")+"% das notas":"";
+  $("cfErro").textContent = NOTAS.filter(n=>erros.has(n.numero)).length;
+  $("cfAt").textContent = NOTAS.filter(n=>aten.has(n.numero)).length;
+  const nErr = regras.filter(r=>r.tipo==="erro"&&r.itens.length).length;
+  $("badgeConf").textContent = nErr?nErr:"✓"; $("badgeConf").classList.toggle("ok",!nErr);
+  $("infoConf").textContent = regras.length+" verificações em "+total+" notas · Gerado em "+new Date().toLocaleString("pt-BR");
+  desenharRegras("todas");
+}
+
+function desenharRegras(vis){
+  const lista = regras.filter(r=> vis==="todas" || (vis==="ocorr"?r.itens.length>0:r.itens.length===0));
+  $("regras").innerHTML = lista.length ? lista.map(r=>{
+    const e=estado(r), MAX=50;
+    const corpo = r.itens.length
+      ? `<ul class="lista">${r.itens.slice(0,MAX).map(i=>`<li class="ocor"><div class="oc-t"><b>NF ${esc(i.numero)}</b><span>${esc(i.filial)}</span></div><div class="oc-m">${esc(i.msg)}</div><div class="oc-d">Emissão ${dataBR(i.emissao)}${i.vencimento?" · Venc. "+dataBR(i.vencimento):""} · Valor ${brl(i.valor)}</div></li>`).join("")}</ul>`
+        +(r.itens.length>MAX?`<p class="mais">Mostrando ${MAX} de ${r.itens.length}. Use "Exportar Excel" para ver todas.</p>`:"")
+      : `<p class="ok-msg">Nenhuma ocorrência: todas as ${NOTAS.length} notas conferem nesta verificação.</p>`;
+    return `<details class="regra ${e.cls==="ok"?"":e.cls}"><summary><span class="ic">${e.ic}</span><span class="tt"><b>${esc(r.titulo)}</b><small>${esc(r.desc)}</small></span><span class="res">${esc(e.txt)}</span></summary><div class="corpo">${corpo}</div></details>`;
+  }).join("") : '<div class="vazio">Nenhuma verificação neste filtro.</div>';
+}
+
+/* Excel (CSV) com todas as ocorrências de todas as regras */
+function exportarConformidade(){
+  const num=n=>n.toFixed(2).replace(".",",");
+  const cel=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  const linhas=[["Verificação","Tipo","Nº documento","Filial","Emissão","Vencimento","Valor","Observação"].map(cel).join(";")];
+  regras.forEach(r=>r.itens.forEach(i=>linhas.push([cel(r.titulo),cel(r.tipo==="erro"?"Inconformidade":"Atenção"),cel(i.numero),cel(i.filial),dataBR(i.emissao),i.vencimento?dataBR(i.vencimento):"",num(i.valor),cel(i.msg)].join(";"))));
+  if(linhas.length===1) linhas.push(cel("Nenhuma ocorrência: todas as verificações estão conformes."));
+  const blob=new Blob(["\uFEFF"+linhas.join("\r\n")],{type:"text/csv;charset=utf-8;"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="conformidade-"+new Date().toISOString().slice(0,10)+".csv";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+/* ---- Exportar PDF: usa a impressão do navegador (escolha "Salvar como PDF") ---- */
+function exportarPDF(){ aplicar(); window.print(); }
+
+/* ---- Exportar Excel: CSV com ";" e UTF-8 com BOM (abre direto no Excel BR) ---- */
+function exportarExcel(){
+  const num=n=>n.toFixed(2).replace(".",",");
+  const cel=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  const linhas=[["Filial","Data de emissão","Status","Valor real da nota","Devolução","A receber"].map(cel).join(";")];
+  visiveis.forEach(n=>linhas.push([cel(n.filial),dataBR(n.emissao),cel(rotulo(n.status)),num(n.real),num(n.devolucao),num(n.receber)].join(";")));
+  const s=k=>visiveis.reduce((t,n)=>t+n[k],0);
+  linhas.push([cel("TOTAL"),"","",num(s("real")),num(s("devolucao")),num(s("receber"))].join(";"));
+  const blob=new Blob(["﻿"+linhas.join("\r\n")],{type:"text/csv;charset=utf-8;"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="notas-fiscais-"+new Date().toISOString().slice(0,10)+".csv";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+</script>
+</body>
+</html>
